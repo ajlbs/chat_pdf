@@ -620,7 +620,7 @@ def ask_question(goal, pdf_files):
     global temperature, max_tokens, reserve_response_tokens, all_text_chunks, num_chunks, pdf_hash, extracted_text, detected_lang, translated_question, vector_count, first_question, system_message, pinecone_results, fetched_text_chunks, fetched_text_chunk_embeddings, fetched_important_entities, index_stats_response
 
     # Initialize Pinecone
-    api_key = "c0afb177-4c99-4e5d-b0e2-7d7f23b3a550"
+    api_key = 
     environment = "us-west1-gcp"
     index_name = 'pdf-chatbot'
     dimension = 1536  # Update this to the correct dimension of your embeddings
