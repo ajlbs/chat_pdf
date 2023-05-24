@@ -1,0 +1,66 @@
+how can process multiple chunks parallely?
+To process multiple chunks in parallel, you can use Python's concurrent.futures library with a ThreadPoolExecutor. This will help speed up the processing of chunks by utilizing multiple threads.
+
+Here's how to modify the process_chunks function to process chunks in parallel:
+
+python
+Copy code
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def process_chunk(chunk, question, temperature, max_tokens, reserve_response_tokens):
+    system_message = "You are a helpful assistant that specializes in summarizing complex legal texts, particularly for energy markets, in simple terms without repeating sentences with similar meaning."
+    system_tokens = count_tokens(system_message)
+
+    message_tokens = count_tokens(question) + count_tokens(chunk) + system_tokens
+
+    if message_tokens + reserve_response_tokens >= max_tokens:
+        print("Token count exceeds the model's limit. Adjust the text or question.")
+        return None
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {
+                "role": "system",
+                "content": system_message
+            },
+            {"role": "user", "content": f"{question}"},
+            {"role": "assistant", "content": f"{chunk}"}
+        ],
+        max_tokens=max_tokens - message_tokens - 1,  # Subtracting 1 to account for potential rounding errors
+        n=1,
+        stop=None,
+        temperature=temperature,
+        timeout=120
+    )
+
+    answer = response.choices[0].message['content'].strip()
+    unique_answer = remove_duplicate_sentences(answer)
+    print("Answer for chunk:", unique_answer)
+    return answer
+
+def process_chunks(text_chunks, question, temperature, max_tokens, reserve_response_tokens):
+    answers = []
+
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(
+                process_chunk, chunk, question, temperature, max_tokens, reserve_response_tokens
+            )
+            for chunk in text_chunks
+        ]
+
+        for future in as_completed(futures):
+            answer = future.result()
+            if answer is not None:
+                answers.append(answer)
+
+    return answers
+In this modification, we created a process_chunk function that handles the processing of a single chunk. Then, in the process_chunks function, we use a ThreadPoolExecutor to submit tasks to process each chunk concurrently. The as_completed function is used to retrieve the results as they become available.
+
+Keep in mind that using a large number of threads may lead to rate-limiting issues or timeouts when making API calls to OpenAI, so adjust the number of threads accordingly. The default value for the ThreadPoolExecutor is the number of processors on the machine, multiplied by 5. You can control the number of threads by passing the max_workers argument to the ThreadPoolExecutor constructor, like this:
+
+python
+Copy code
+with ThreadPoolExecutor(max_workers=10) as executor:
+This sets the maximum number of threads to 10. Adjust the value according to your system resources and OpenAI API limitations.
